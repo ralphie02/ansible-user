@@ -16,7 +16,7 @@ before_install:
 script:
   - container_id=$(mktemp)
   # Run container in detached state.
-  - 'sudo docker run --detach --privileged -v "${PWD}":${role_dir}:ro -v "${PWD}"/tests/defaults:${role_dir}/defaults:ro -v "${PWD}"/tests/files:${role_dir}/files:ro ${run_opts} ralphie02/docker-${distro}-ansible:latest ${init} > "${container_id}"'
+  - 'sudo docker run --detach --privileged -v "${PWD}":${role_dir}:ro -v "${PWD}"/tests/defaults:${role_dir}/defaults:ro ${run_opts} ralphie02/docker-${distro}-ansible:latest ${init} > "${container_id}"'
 
   # Ansible syntax check.
   - 'sudo docker exec --tty "$(cat ${container_id})" env TERM=xterm ansible-playbook ${role_dir}/tests/test_travis.yml --syntax-check'
