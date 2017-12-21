@@ -1,0 +1,20 @@
+---
+- import_tasks: sudo.yml
+  tags: sudo
+
+- name: GROUP | Create
+  group: name={{item}} state=present
+  with_items: "{{user_groups}}"
+
+- include_tasks: create.yml
+  with_dict: "{{user_list}}"
+  when: item.key not in user_revoked
+  tags: user_create
+
+- name: REVOKED | Remove users
+  user: name={{item}} state=absent remove=yes
+  with_items: "{{user_revoked}}"
+
+- import_tasks: tfa.yml
+  when: user_tfa_on == true
+  tags: user_tfa

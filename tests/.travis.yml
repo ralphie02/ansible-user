@@ -1,0 +1,41 @@
+---
+sudo: false
+
+env:
+  - distro: devuan
+    init: /sbin/init
+    run_opts: ""
+    role_dir: /etc/ansible/roles/my_role
+
+services:
+  - docker
+
+before_install:
+  - 'sudo docker pull ralphie02/docker-${distro}-ansible:latest'
+
+script:
+  - container_id=$(mktemp)
+  # Run container in detached state.
+  - 'sudo docker run --detach --privileged -v "${PWD}":${role_dir}:ro -v "${PWD}"/tests/defaults:${role_dir}/defaults:ro -v "${PWD}"/tests/files:${role_dir}/files:ro ${run_opts} ralphie02/docker-${distro}-ansible:latest ${init} > "${container_id}"'
+
+  # Ansible syntax check.
+  - 'sudo docker exec --tty "$(cat ${container_id})" env TERM=xterm ansible-playbook ${role_dir}/tests/test_travis.yml --syntax-check'
+
+  # Test role.
+  - 'sudo docker exec --tty "$(cat ${container_id})" env TERM=xterm ansible-playbook ${role_dir}/tests/test_travis.yml'
+
+  # Test role idempotence.
+  - idempotence=$(mktemp)
+  - sudo docker exec "$(cat ${container_id})" ansible-playbook ${role_dir}/tests/test_travis.yml | tee -a ${idempotence}
+  - >
+    tail ${idempotence}
+    | grep -q 'changed=0.*failed=0'
+    && (echo 'Idempotence test: pass' && exit 0)
+    || (echo 'Idempotence test: fail' && exit 1)
+
+after_success:
+  # Clean up.
+  - 'sudo docker stop "$(cat ${container_id})"'
+
+notifications:
+  webhooks: https://galaxy.ansible.com/api/v1/notifications/

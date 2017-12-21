@@ -1,0 +1,14 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  pre_tasks:
+    - apt: name=ssh update_cache=yes cache_valid_time=86400
+    - copy: src=/etc/skel/.bashrc dest=/root/.bashrc
+
+  roles:
+    - role: my_role
+      vars:
+        user_tfa_on: true
+
+  post_tasks:
+    - import_tasks: test.yml

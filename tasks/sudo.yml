@@ -1,0 +1,6 @@
+---
+- name: SUDO | Install
+  apt: name=sudo update_cache=yes cache_valid_time=86400
+
+- name: BASHRC | Update root .bashrc
+  blockinfile: path=/root/.bashrc insertafter={{user_bashrc_unset_line}} block={{user_bashrc_block}}

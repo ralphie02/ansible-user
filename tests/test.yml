@@ -1,0 +1,49 @@
+---
+# ----- USER-SPECIFIC TESTS ----- #
+- name: EXIST | user, user dir and user gid
+  shell: id {{item.key}} && echo ~{{item.key}}
+  register: result
+  changed_when: false
+  failed_when:
+    (item.key not in result.stdout_lines.0.split().0) and
+    (item.value.gid | default('users') not in result.stdout_lines.0.split().1) and
+    ([item.value.home | default('/home'), item.key] | join('/') not in result.stdout_lines.1)
+  when: item.key not in user_revoked
+  with_dict: "{{user_list}}"
+
+- name: EXIST | user groups
+  shell: groups {{item.key}}
+  register: result
+  changed_when: false
+  failed_when:
+    ('False' in
+      "{% for g in result.stdout_lines.0.split(':').1.strip().split(' ') %}
+        {{ g in [item.value.gid|default('users'), item.value.groups|default('')] | join(',') }}
+      {% endfor %}"
+    )
+  when: item.key not in user_revoked
+  with_dict: "{{user_list}}"
+
+- name: MISSING | User
+  shell: id {{item.key}}
+  register: result
+  changed_when: false
+  failed_when: ('no such user' not in result.stderr)
+  when: item.key in user_revoked
+  with_dict: "{{user_list}}"
+
+- name: BASHRC | PS1 block
+  shell: cat /root/.bashrc
+  register: result
+  failed_when: user_bashrc_block not in result.stdout
+
+# ----- TFA TESTS ----- #
+- name: PAM | sshd_config
+  shell: cat /etc/pam.d/sshd | sed '$!d'
+  register: result
+  failed_when: ('auth required pam_google_authenticator.so' not in result.stdout)
+
+- name: SSH | sshd_config
+  shell: cat /etc/ssh/sshd_config | sed '$!d'
+  register: result
+  failed_when: ('AuthenticationMethods publickey,keyboard-interactive' not in result.stdout)

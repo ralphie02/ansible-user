@@ -1,0 +1,44 @@
+---
+#---- CREATE & REVOKE USERS ----#
+user_revoked: [revoked_user]
+user_backend: backend
+user_groups: [g1,g2]
+user_list:
+  #---- ADMINS ----#
+  test_user:
+    password: $6$DsWcHCid$JN8J1YsP0H/WKw..rA5l7b9zrOrlGFjmbG/8xiRlJi/o.4dVu.PAj9h38mebWfEbM6WJkS/QqpawG6cnpOgH0.
+    ssh_key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCumNDaX8OdhvpbgE9GCNcZwphaFa57skep4cQMC+BZOtyMu0dgeaqfAoU1ukMIAgw2ejeHRXIvA8ZiEwLFwWMUaIseoQ9/4LaXyoEgR/kMXDpeQNn/FLGdNZStrcdUVJ9x0+HIi+jhkxTpMY9n4/aUQMKTXrlw/I5hCELbwCgOzym48k1s1AsVsad3UlKLBbD5mPi3rTKBQiGZCjHPQabI2MvDTjTaXpu4yM557AsPe/7NXYc7pzYlZ5TR8HcxzHUHIdzRrBitjevG2O20Ojaj23jYLsBHCCDox2033fWLLK7QgL1EW5Vwnnr5Vf+R1iIu7XcYp/xFWcprqOTi5KkOr5YUJ81OoHejwUwyQsmiBB+fOk4RZzfJginLxsPKcUTWo9K+QVw5TzmV8k0INnlbwEtS1khr0xqs9m2tN6d8VB3P1iLn4Awq9qeoLSfPHD1J3KviWS1VB3dLmurGaitUfSzroV5XlkTluLGWpGJRDqH1TLyj0sYU3FUyVuNXl2YNB3umOcWKQDi4gMyphLjf3wYPNlFsS2E23Esr0hWg8RIJWdibNOW9PR36BX6QmTLNbA7/3XL95BNGWkxm/bm1K3B/c5mY4xvn3gG8fmAX0sneHx6COu0ilCrWXv58OAi8gASVkt1lAq85LZBhr/Wvba2CMApR1JsU6gcIVQ0lLqvl2sIMl8jUyRQ== test@test.com
+    groups: g2
+    tfa: true
+  test_backend:
+    ssh_key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCumNDaX8OdhvpbgE9GCNcZwphaFa57skep4cQMC+BZOtyMu0dgeaqfAoU1ukMIAgw2ejeHRXIvA8ZiEwLFwWMUaIseoQ9/4LaXyoEgR/kMXDpeQNn/FLGdNZStrcdUVJ9x0+HIi+jhkxTpMY9n4/aUQMKTXrlw/I5hCELbwCgOzym48k1s1AsVsad3UlKLBbD5mPi3rTKBQiGZCjHPQabI2MvDTjTaXpu4yM557AsPe/7NXYc7pzYlZ5TR8HcxzHUHIdzRrBitjevG2O20Ojaj23jYLsBHCCDox2033fWLLK7QgL1EW5Vwnnr5Vf+R1iIu7XcYp/xFWcprqOTi5KkOr5YUJ81OoHejwUwyQsmiBB+fOk4RZzfJginLxsPKcUTWo9K+QVw5TzmV8k0INnlbwEtS1khr0xqs9m2tN6d8VB3P1iLn4Awq9qeoLSfPHD1J3KviWS1VB3dLmurGaitUfSzroV5XlkTluLGWpGJRDqH1TLyj0sYU3FUyVuNXl2YNB3umOcWKQDi4gMyphLjf3wYPNlFsS2E23Esr0hWg8RIJWdibNOW9PR36BX6QmTLNbA7/3XL95BNGWkxm/bm1K3B/c5mY4xvn3gG8fmAX0sneHx6COu0ilCrWXv58OAi8gASVkt1lAq85LZBhr/Wvba2CMApR1JsU6gcIVQ0lLqvl2sIMl8jUyRQ== test@test.com
+    home: /opt
+    gid: g1
+
+#---- TFA ----#
+user_tfa_on: false
+user_tfa_pam:
+  remove:
+    - '^@include common-auth'
+  add:
+    - '# @include common-auth'
+    - auth required pam_google_authenticator.so nullok'
+user_tfa_sshd:
+  remove:
+    - '^ChallengeResponseAuthentication no'
+  add:
+    - 'ChallengeResponseAuthentication yes'
+    - 'AuthenticationMethods publickey,keyboard-interactive'
+
+#---- KEPT AT BOTTOM BECAUSE IT'S TOO LONG ----#
+user_bashrc_unset_line: '^unset .*color_prompt.*'
+user_bashrc_block: |
+  parse_git_branch() { git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'}
+  git_l_bracket() { if [ "$(parse_git_branch)" != "" ]; then echo '('; fi }
+  git_r_bracket() { if [ "$(parse_git_branch)" != "" ]; then echo ')'; fi }
+  git_changed() {
+    IS_GIT_CLEAN='working directory clean'
+    STATUS=`git status 2> /dev/null | grep "$IS_GIT_CLEAN"`
+    if [[ "$STATUS" != *"$IS_GIT_CLEAN"* ]] && [ -e ./.git ]; then echo ' ✗'; fi
+  }
+  PS1='\[\e[36m\]\u\[\e[m\]@\[\e[31m\]\H \[\e[32m\]\A\[\e[32m\]-\[\e[32m\]\d \[\e[1;36m\]\w\[\e[34m\]$(git_l_bracket)\[\e[31m\]$(parse_git_branch)\[\e[34m\]$(git_r_bracket)\[\e[33m\]$(git_changed) \[\e[00m\]'

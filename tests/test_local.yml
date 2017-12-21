@@ -1,0 +1,40 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    test_hosts:
+      - { name: user_test_host, image: 'ralphie02/docker-devuan-ansible:latest' }
+  tasks:
+    - docker_container: name={{item.name}} image={{item.image}} command=/sbin/init privileged=yes restart=yes tls=yes tty=yes stop_timeout=1 network_mode=""
+      # expose: "{{ item.expose|default(['1-65535']) }}"
+      with_items: "{{test_hosts}}"
+
+    - shell: "docker inspect --format '{{ '{{' }} .NetworkSettings.IPAddress {{ '}}' }}' {{item.name}}"
+      register: docker_ips
+      with_items: "{{test_hosts}}"
+      changed_when: false
+
+    - name: "Add hosts vars to inventory"
+      add_host:
+        name: "{{item.1.name}}"
+        docker_ip: "{{docker_ips.results[item.0].stdout}}"
+        ansible_connection: docker
+        ansible_user: root
+        groups: containers
+      with_indexed_items: "{{test_hosts}}"
+      changed_when: false
+
+- hosts: containers
+  gather_facts: no
+  pre_tasks:
+    - apt: name=ssh update_cache=yes cache_valid_time=86400
+    - copy: src=/etc/skel/.bashrc dest=/root/.bashrc
+
+  roles:
+    - role: user
+      vars:
+        user_tfa_on: true
+
+  post_tasks:
+    - import_tasks: test.yml

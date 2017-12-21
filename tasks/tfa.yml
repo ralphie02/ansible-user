@@ -1,0 +1,32 @@
+---
+- name: 2FA | Install
+  apt: name=fail2ban,libpam-google-authenticator update_cache=yes cache_valid_time=86400
+
+- name: 2FA | Copy .google-authenticator
+  copy: 
+    src: "{{item.key}}"
+    dest: "/home/{{item.key}}/.google_authenticator"
+    owner: "{{item.key}}"
+    mode: 0400
+  with_dict: "{{user_list}}"
+  when: item.value.tfa is defined
+
+- name: 2FA | Remove pam.sshd line
+  lineinfile: path=/etc/pam.d/sshd regexp={{item}} state=absent
+  with_items: "{{user_tfa_pam.remove}}"
+  notify: reload ssh
+
+- name: 2FA | Add pam.sshd line
+  lineinfile: path=/etc/pam.d/sshd line={{item}}
+  with_items: "{{user_tfa_pam.add}}"
+  notify: reload ssh
+
+- name: 2FA | Remove sshd_config line
+  lineinfile: path=/etc/ssh/sshd_config regexp={{item}} state=absent
+  with_items: "{{user_tfa_sshd.remove}}"
+  notify: reload ssh
+
+- name: 2FA | Add sshd_config line
+  lineinfile: path=/etc/ssh/sshd_config line={{item}}
+  with_items: "{{user_tfa_sshd.add}}"
+  notify: reload ssh

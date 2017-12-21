@@ -1,0 +1,21 @@
+---
+- set_fact:
+    user_new: "{{(item.key == 'backend')|ternary(user_backend,item.key)}}"
+
+- name: CREATE
+  user:
+    name: "{{user_new}}"
+    password: "{{item.value.password|default('!')}}"
+    groups: "{{item.value.groups|default('')}}"
+    group: "{{item.value.gid|default('users')}}"
+    home: "{{item.value.home|default('/home')}}/{{user_new}}"
+    shell: /bin/bash
+
+- name: AUTH_KEY | Add authorized_keys
+  authorized_key: user={{user_new}} key={{item.value.ssh_key}} exclusive=yes
+
+- name: BASHRC | Update user .bashrc
+  blockinfile:
+    path: "{{item.value.home|default('/home')}}/{{user_new}}/.bashrc"
+    insertafter: "{{user_bashrc_unset_line}}"
+    block: "{{user_bashrc_block}}"
