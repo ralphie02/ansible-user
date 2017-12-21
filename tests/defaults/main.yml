@@ -19,16 +19,16 @@ user_list:
 user_tfa_on: false
 user_tfa_pam:
   remove:
-    - '^@include common-auth'
+    - ^@include common-auth
   add:
     - '# @include common-auth'
-    - auth required pam_google_authenticator.so nullok'
+    - auth required pam_google_authenticator.so nullok
 user_tfa_sshd:
   remove:
-    - '^ChallengeResponseAuthentication no'
+    - ^ChallengeResponseAuthentication no
   add:
-    - 'ChallengeResponseAuthentication yes'
-    - 'AuthenticationMethods publickey,keyboard-interactive'
+    - ChallengeResponseAuthentication yes
+    - AuthenticationMethods publickey,keyboard-interactive
 
 #---- KEPT AT BOTTOM BECAUSE IT'S TOO LONG ----#
 user_bashrc_unset_line: '^unset .*color_prompt.*'
