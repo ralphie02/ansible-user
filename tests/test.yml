@@ -35,15 +35,18 @@
 - name: BASHRC | PS1 block
   shell: cat /root/.bashrc
   register: result
+  changed_when: false
   failed_when: user_bashrc_block not in result.stdout
 
 # ----- TFA TESTS ----- #
 - name: PAM | sshd_config
   shell: cat /etc/pam.d/sshd | sed '$!d'
   register: result
+  changed_when: false
   failed_when: ('auth required pam_google_authenticator.so' not in result.stdout)
 
 - name: SSH | sshd_config
   shell: cat /etc/ssh/sshd_config | sed '$!d'
   register: result
+  changed_when: false
   failed_when: ('AuthenticationMethods publickey,keyboard-interactive' not in result.stdout)
